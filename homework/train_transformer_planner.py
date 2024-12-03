@@ -12,11 +12,11 @@ from homework.datasets.road_dataset import load_data  # Ensure this exists
 from homework.models import save_model
 from homework.metrics import PlannerMetric  # Custom metric for trajectory planning
 
-def train_planner(
+def train_transformer_planner(
         exp_dir: str = "logs",
-        model_name: str = "planner_model",
-        num_epoch: int = 50,
-        lr: float = 1e-3,
+        model_name: str = "transformer_planner",
+        num_epoch: int = 20,
+        lr: float = 1e-4,
         batch_size: int = 32,
         seed: int = 2024,
         **kwargs,
@@ -49,7 +49,7 @@ def train_planner(
 
     # Define loss function and optimizer
     loss_fn = torch.nn.L1Loss()  # Assuming regression for trajectory points
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)  # AdamW for better performance
 
     # Initialize the metric for trajectory evaluation
     metrics = PlannerMetric()
@@ -90,7 +90,7 @@ def train_planner(
                 labels_mask = batch['waypoints_mask'].to(device)  # Ensure the mask is available during validation
 
                 predictions = model(track_left, track_right)
-                metrics.add(predictions, waypoints, labels_mask)  # Include the labels_mask here
+                metrics.add(predictions, waypoints, labels_mask)
 
         # Compute and log metrics
         metrics_dict = metrics.compute()
@@ -123,10 +123,10 @@ if __name__ == "__main__":
 
     # Command-line arguments
     parser.add_argument("--exp_dir", type=str, default="logs")
-    parser.add_argument("--model_name", type=str, required=True)
-    parser.add_argument("--num_epoch", type=int, default=20)
+    parser.add_argument("--model_name", type=str, default="transformer_planner")
+    parser.add_argument("--num_epoch", type=int, default=15)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--batch_size", type=int, default=4)
 
-    # Pass all arguments to the train_planner function
-    train_planner(**vars(parser.parse_args()))
+    # Pass all arguments to the train_planner_transformer function
+    train_transformer_planner(**vars(parser.parse_args()))

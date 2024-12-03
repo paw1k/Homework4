@@ -12,9 +12,9 @@ from homework.datasets.road_dataset import load_data  # Ensure this exists
 from homework.models import save_model
 from homework.metrics import PlannerMetric  # Custom metric for trajectory planning
 
-def train_planner(
+def train_CNN_planner(
         exp_dir: str = "logs",
-        model_name: str = "planner_model",
+        model_name: str = "cnn_planner",
         num_epoch: int = 50,
         lr: float = 1e-3,
         batch_size: int = 32,
@@ -61,13 +61,12 @@ def train_planner(
         start_time = time.time()
 
         for batch in train_data:
-            track_left = batch['track_left'].to(device)
-            track_right = batch['track_right'].to(device)
+            image = batch['image'].to(device)  # Assuming 'image' is the input tensor
             waypoints = batch['waypoints'].to(device)
             labels_mask = batch['waypoints_mask'].to(device)  # Ensure the mask is available
 
             # Forward pass
-            predictions = model(track_left, track_right)
+            predictions = model(image)
 
             # Compute loss
             loss = loss_fn(predictions, waypoints)
@@ -84,13 +83,12 @@ def train_planner(
         with torch.inference_mode():
             model.eval()
             for batch in val_data:
-                track_left = batch['track_left'].to(device)
-                track_right = batch['track_right'].to(device)
+                image = batch['image'].to(device)
                 waypoints = batch['waypoints'].to(device)
-                labels_mask = batch['waypoints_mask'].to(device)  # Ensure the mask is available during validation
+                labels_mask = batch['waypoints_mask'].to(device)
 
-                predictions = model(track_left, track_right)
-                metrics.add(predictions, waypoints, labels_mask)  # Include the labels_mask here
+                predictions = model(image)
+                metrics.add(predictions, waypoints, labels_mask)
 
         # Compute and log metrics
         metrics_dict = metrics.compute()
@@ -124,9 +122,9 @@ if __name__ == "__main__":
     # Command-line arguments
     parser.add_argument("--exp_dir", type=str, default="logs")
     parser.add_argument("--model_name", type=str, required=True)
-    parser.add_argument("--num_epoch", type=int, default=20)
+    parser.add_argument("--num_epoch", type=int, default=25)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--batch_size", type=int, default=4)
 
-    # Pass all arguments to the train_planner function
-    train_planner(**vars(parser.parse_args()))
+    # Pass all arguments to the train_CNN_planner function
+    train_CNN_planner(**vars(parser.parse_args()))
